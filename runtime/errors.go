@@ -149,18 +149,22 @@ func DefaultHTTPErrorHandler(ctx context.Context, mux *ServeMux, marshaler Marsh
 	}
 
 	md, ok := ServerMetadataFromContext(ctx)
+	var plan responseMetadataPlan
+	doForwardTrailers := false
 	if ok {
-		handleForwardResponseServerMetadata(w, mux, md)
+		// Same merge path as the success response: plan once, write headers
+		// before the body, announce and write trailers around it.
+		plan = planResponseMetadata(mux, md)
+		plan.writeHeaders(w)
 
 		// RFC 7230 https://tools.ietf.org/html/rfc7230#section-4.1.2
 		// Unless the request includes a TE header field indicating "trailers"
 		// is acceptable, as described in Section 4.3, a server SHOULD NOT
 		// generate trailer fields that it believes are necessary for the user
 		// agent to receive.
-		doForwardTrailers := requestAcceptsTrailers(r)
-
+		doForwardTrailers = requestAcceptsTrailers(r)
 		if doForwardTrailers {
-			handleForwardResponseTrailerHeader(w, mux, md)
+			plan.announceTrailers(w)
 			w.Header().Set("Transfer-Encoding", "chunked")
 		}
 	}
@@ -175,8 +179,8 @@ func DefaultHTTPErrorHandler(ctx context.Context, mux *ServeMux, marshaler Marsh
 		grpclog.Errorf("Failed to write response: %v", err)
 	}
 
-	if ok && requestAcceptsTrailers(r) {
-		handleForwardResponseTrailer(w, mux, md)
+	if ok && doForwardTrailers {
+		plan.writeTrailers(w)
 	}
 }
 

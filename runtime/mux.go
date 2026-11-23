@@ -253,6 +253,13 @@ func (fn HeaderMatcherFunc) matchedMalformedHeaders() []string {
 // This matcher will be called with each header in response header metadata. If matcher returns true, that header will be
 // passed to http response returned from gateway. To transform the header before passing to response,
 // matcher should return the modified header.
+//
+// Metadata keys are normalized to lower case before matching and the returned
+// name is canonicalized, so matching is exact and stable. Header metadata only
+// ever becomes response headers: it is written before the body starts and is
+// never merged with trailer metadata that matches the same name -- if both
+// matchers produce the same HTTP name, the header entry wins and the trailer
+// entry is dropped.
 func WithOutgoingHeaderMatcher(fn HeaderMatcherFunc) ServeMuxOption {
 	return func(mux *ServeMux) {
 		mux.outgoingHeaderMatcher = fn
@@ -264,6 +271,13 @@ func WithOutgoingHeaderMatcher(fn HeaderMatcherFunc) ServeMuxOption {
 // This matcher will be called with each header in response trailer metadata. If matcher returns true, that header will be
 // passed to http response returned from gateway. To transform the header before passing to response,
 // matcher should return the modified header.
+//
+// Metadata keys are normalized to lower case before matching and the returned
+// name is canonicalized, so the name announced in the Trailer header and the
+// name the value is written under after the body are always the same. Trailer
+// metadata only ever becomes response trailers; it is never promoted into a
+// header once the body has started. The success, error and stream responses
+// all use this same merge path.
 func WithOutgoingTrailerMatcher(fn HeaderMatcherFunc) ServeMuxOption {
 	return func(mux *ServeMux) {
 		mux.outgoingTrailerMatcher = fn

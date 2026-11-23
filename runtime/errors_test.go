@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,6 +16,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	statuspb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
@@ -180,5 +183,74 @@ func TestHTTPStreamError(t *testing.T) {
 				t.Errorf("Expected response %s, got %s", tc.expectedResponse, w.Body.Bytes())
 			}
 		})
+	}
+}
+
+// TestDefaultHTTPErrorTrailerParity verifies that the error path merges server
+// metadata through the same rules as the success path: header metadata becomes
+// response headers, trailer metadata is announced before the body and written
+// after it, and multi-value order is preserved.
+func TestDefaultHTTPErrorTrailerParity(t *testing.T) {
+	md := runtime.ServerMetadata{
+		HeaderMD:  metadata.Pairs("foo", "h1", "foo", "h2"),
+		TrailerMD: metadata.Pairs("foo", "t1", "foo", "t2"),
+	}
+	ctx := runtime.NewServerMetadataContext(context.Background(), md)
+
+	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	req.Header.Set("Te", "trailers")
+	resp := httptest.NewRecorder()
+
+	mux := runtime.NewServeMux()
+	runtime.DefaultHTTPErrorHandler(ctx, mux, &runtime.JSONPb{}, resp, req, status.Error(codes.NotFound, "missing"))
+
+	w := resp.Result()
+	_, _ = io.Copy(io.Discard, w.Body)
+	defer w.Body.Close()
+
+	if w.StatusCode != http.StatusNotFound {
+		t.Fatalf("StatusCode %d want %d", w.StatusCode, http.StatusNotFound)
+	}
+
+	if got, want := w.Header["Grpc-Metadata-Foo"], []string{"h1", "h2"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Header Grpc-Metadata-Foo %v want %v", got, want)
+	}
+	if got, want := w.Header.Values("Trailer"), []string{"Grpc-Trailer-Foo"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Trailer announcement %v want %v", got, want)
+	}
+	if got, want := w.Header.Get("Transfer-Encoding"), "chunked"; got != want {
+		t.Errorf("Transfer-Encoding %q want %q", got, want)
+	}
+	if got, want := w.Trailer["Grpc-Trailer-Foo"], []string{"t1", "t2"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Trailer Grpc-Trailer-Foo %v want %v", got, want)
+	}
+}
+
+// TestDefaultHTTPErrorNoTrailerWithoutTE verifies the error path does not
+// announce or write trailers when the client does not accept them.
+func TestDefaultHTTPErrorNoTrailerWithoutTE(t *testing.T) {
+	md := runtime.ServerMetadata{
+		TrailerMD: metadata.Pairs("foo", "t1"),
+	}
+	ctx := runtime.NewServerMetadataContext(context.Background(), md)
+
+	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+
+	mux := runtime.NewServeMux()
+	runtime.DefaultHTTPErrorHandler(ctx, mux, &runtime.JSONPb{}, resp, req, status.Error(codes.NotFound, "missing"))
+
+	w := resp.Result()
+	_, _ = io.Copy(io.Discard, w.Body)
+	defer w.Body.Close()
+
+	if got := w.Header.Values("Trailer"); len(got) != 0 {
+		t.Errorf("unexpected Trailer announcement %v", got)
+	}
+	if got := w.Header.Get("Transfer-Encoding"); got != "" {
+		t.Errorf("unexpected Transfer-Encoding %q", got)
+	}
+	if len(w.Trailer) != 0 {
+		t.Errorf("unexpected trailers %v", w.Trailer)
 	}
 }

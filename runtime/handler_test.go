@@ -649,6 +649,226 @@ func TestOutgoingTrailerMatcher(t *testing.T) {
 	}
 }
 
+// TestForwardResponseMessageHeaderAndTrailer exercises the unified propagation
+// rules for metadata that is configured as both a response header and a
+// trailer: each value stays in its declared location, multi-value order is
+// preserved, empty values are forwarded as empty HTTP field values, and a name
+// both matchers produce is resolved deterministically (header wins).
+func TestForwardResponseMessageHeaderAndTrailer(t *testing.T) {
+	t.Parallel()
+	msg := &pb.SimpleMessage{Id: "foo"}
+	for _, tc := range []struct {
+		name          string
+		md            runtime.ServerMetadata
+		headerMatcher runtime.HeaderMatcherFunc
+		headers       http.Header
+		trailer       http.Header
+	}{
+		{
+			name: "same key as header and trailer stays in its declared location",
+			md: runtime.ServerMetadata{
+				HeaderMD:  metadata.Pairs("foo", "h1", "foo", "h2"),
+				TrailerMD: metadata.Pairs("foo", "t1", "foo", "t2"),
+			},
+			headers: http.Header{
+				"Content-Type":      []string{"application/json"},
+				"Transfer-Encoding": []string{"chunked"},
+				"Trailer":           []string{"Grpc-Trailer-Foo"},
+				"Grpc-Metadata-Foo": []string{"h1", "h2"},
+			},
+			trailer: http.Header{
+				"Grpc-Trailer-Foo": []string{"t1", "t2"},
+			},
+		},
+		{
+			name: "multi-value order preserved with empty value in the middle",
+			md: runtime.ServerMetadata{
+				HeaderMD:  metadata.Pairs("foo", "a", "foo", "", "foo", "b"),
+				TrailerMD: metadata.Pairs("foo", "x", "foo", "", "foo", "y"),
+			},
+			headers: http.Header{
+				"Content-Type":      []string{"application/json"},
+				"Transfer-Encoding": []string{"chunked"},
+				"Trailer":           []string{"Grpc-Trailer-Foo"},
+				"Grpc-Metadata-Foo": []string{"a", "", "b"},
+			},
+			trailer: http.Header{
+				"Grpc-Trailer-Foo": []string{"x", "", "y"},
+			},
+		},
+		{
+			name: "metadata keys are normalized before matching",
+			md: runtime.ServerMetadata{
+				// Built by hand, bypassing metadata.Pairs' lower-casing.
+				HeaderMD:  metadata.MD{"Foo": []string{"bar"}},
+				TrailerMD: metadata.MD{"Foo": []string{"baz"}},
+			},
+			headers: http.Header{
+				"Content-Type":      []string{"application/json"},
+				"Transfer-Encoding": []string{"chunked"},
+				"Trailer":           []string{"Grpc-Trailer-Foo"},
+				"Grpc-Metadata-Foo": []string{"bar"},
+			},
+			trailer: http.Header{
+				"Grpc-Trailer-Foo": []string{"baz"},
+			},
+		},
+		{
+			name: "matcher name collision resolves to the header",
+			md: runtime.ServerMetadata{
+				HeaderMD:  metadata.Pairs("foo", "h1"),
+				TrailerMD: metadata.Pairs("foo", "t1"),
+			},
+			headerMatcher: func(key string) (string, bool) {
+				if key == "foo" {
+					return "x-thing", true
+				}
+				return "", false
+			},
+			headers: http.Header{
+				"Content-Type":      []string{"application/json"},
+				"Transfer-Encoding": []string{"chunked"},
+				"X-Thing":           []string{"h1"},
+			},
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := runtime.NewServerMetadataContext(context.Background(), tc.md)
+
+			req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+			req.Header = http.Header{"Te": []string{"trailers"}}
+			resp := httptest.NewRecorder()
+
+			headerMatcher := tc.headerMatcher
+			if headerMatcher == nil {
+				headerMatcher = func(key string) (string, bool) {
+					return runtime.MetadataHeaderPrefix + key, true
+				}
+			}
+			mux := runtime.NewServeMux(
+				runtime.WithOutgoingHeaderMatcher(headerMatcher),
+				// The trailer matcher maps to the same suffix as the header
+				// matcher, so a key present in both MDs is dual-configured.
+				runtime.WithOutgoingTrailerMatcher(func(key string) (string, bool) {
+					if tc.headerMatcher != nil {
+						return tc.headerMatcher(key)
+					}
+					return runtime.MetadataTrailerPrefix + key, true
+				}),
+			)
+			runtime.ForwardResponseMessage(ctx, mux, &runtime.JSONPb{}, resp, req, msg)
+
+			w := resp.Result()
+			_, _ = io.Copy(io.Discard, w.Body)
+			defer w.Body.Close()
+			if w.StatusCode != http.StatusOK {
+				t.Fatalf("StatusCode %d want %d", w.StatusCode, http.StatusOK)
+			}
+
+			if !reflect.DeepEqual(w.Header, tc.headers) {
+				t.Fatalf("Header %v want %v", w.Header, tc.headers)
+			}
+
+			if !reflect.DeepEqual(w.Trailer, tc.trailer) {
+				t.Fatalf("Trailer %v want %v", w.Trailer, tc.trailer)
+			}
+		})
+	}
+}
+
+// TestForwardResponseStreamTrailerFlush verifies that a stream forwards its
+// trailer metadata on every exit -- clean end of stream and mid-stream error
+// alike -- so closing the stream never leaves announced metadata pending, and
+// that no trailer is announced when the client does not accept trailers.
+func TestForwardResponseStreamTrailerFlush(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name         string
+		msgs         []proto.Message
+		err          error
+		caller       http.Header
+		wantTrailer  http.Header
+		wantAnnounce bool
+	}{
+		{
+			name:         "flushed at end of stream",
+			msgs:         []proto.Message{&pb.SimpleMessage{Id: "One"}},
+			caller:       http.Header{"Te": []string{"trailers"}},
+			wantTrailer:  http.Header{"Grpc-Trailer-Foo": []string{"t1", "t2"}},
+			wantAnnounce: true,
+		},
+		{
+			name:         "flushed after mid-stream error",
+			msgs:         []proto.Message{&pb.SimpleMessage{Id: "One"}},
+			err:          status.Errorf(codes.OutOfRange, "boom"),
+			caller:       http.Header{"Te": []string{"trailers"}},
+			wantTrailer:  http.Header{"Grpc-Trailer-Foo": []string{"t1", "t2"}},
+			wantAnnounce: true,
+		},
+		{
+			name:         "flushed after immediate error",
+			err:          status.Errorf(codes.OutOfRange, "boom"),
+			caller:       http.Header{"Te": []string{"trailers"}},
+			wantTrailer:  http.Header{"Grpc-Trailer-Foo": []string{"t1", "t2"}},
+			wantAnnounce: true,
+		},
+		{
+			name: "not announced when caller rejects trailers",
+			msgs: []proto.Message{&pb.SimpleMessage{Id: "One"}},
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			md := runtime.ServerMetadata{
+				TrailerMD: metadata.Pairs("foo", "t1", "foo", "t2"),
+			}
+			ctx := runtime.NewServerMetadataContext(context.Background(), md)
+
+			var count int
+			errPending := tc.err
+			recv := func() (proto.Message, error) {
+				if count < len(tc.msgs) {
+					count++
+					return tc.msgs[count-1], nil
+				}
+				if errPending != nil {
+					err := errPending
+					errPending = nil
+					return nil, err
+				}
+				return nil, io.EOF
+			}
+
+			req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+			req.Header = tc.caller
+			resp := httptest.NewRecorder()
+
+			mux := runtime.NewServeMux()
+			runtime.ForwardResponseStream(ctx, mux, &runtime.JSONPb{}, resp, req, recv)
+
+			w := resp.Result()
+			_, _ = io.Copy(io.Discard, w.Body)
+			defer w.Body.Close()
+
+			announced := w.Header.Values("Trailer")
+			if tc.wantAnnounce {
+				if !reflect.DeepEqual(announced, []string{"Grpc-Trailer-Foo"}) {
+					t.Fatalf("Trailer announcement %v want %v", announced, []string{"Grpc-Trailer-Foo"})
+				}
+			} else if len(announced) != 0 {
+				t.Fatalf("unexpected Trailer announcement %v", announced)
+			}
+
+			if !reflect.DeepEqual(w.Trailer, tc.wantTrailer) {
+				t.Fatalf("Trailer %v want %v", w.Trailer, tc.wantTrailer)
+			}
+		})
+	}
+}
+
 // BenchmarkForwardResponseMessage measures the unary response path: the server metadata a
 // backend returns is turned into response headers, the message is marshalled and written.
 //
