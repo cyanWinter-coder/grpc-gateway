@@ -210,7 +210,7 @@ func request_ABitOfEverythingService_Create_0(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Create_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Create_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -386,7 +386,7 @@ func local_request_ABitOfEverythingService_Create_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Create_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Create_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.Create(ctx, &protoReq)
@@ -517,7 +517,7 @@ func request_ABitOfEverythingService_CreateBook_0(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CreateBook_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CreateBook_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -553,7 +553,7 @@ func local_request_ABitOfEverythingService_CreateBook_0(ctx context.Context, mar
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CreateBook_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CreateBook_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.CreateBook(ctx, &protoReq)
@@ -599,8 +599,14 @@ func request_ABitOfEverythingService_UpdateBook_0(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_UpdateBook_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_UpdateBook_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -646,8 +652,14 @@ func local_request_ABitOfEverythingService_UpdateBook_0(ctx context.Context, mar
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_UpdateBook_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_UpdateBook_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	msg, err := server.UpdateBook(ctx, &protoReq)
 	return msg, metadata, err
@@ -711,7 +723,7 @@ func request_ABitOfEverythingService_Custom_0(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Custom_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Custom_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -738,7 +750,7 @@ func local_request_ABitOfEverythingService_Custom_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Custom_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Custom_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.Custom(ctx, &protoReq)
@@ -764,7 +776,7 @@ func request_ABitOfEverythingService_Custom_1(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Custom_1); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Custom_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -791,7 +803,7 @@ func local_request_ABitOfEverythingService_Custom_1(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Custom_1); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Custom_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.Custom(ctx, &protoReq)
@@ -817,7 +829,7 @@ func request_ABitOfEverythingService_DoubleColon_0(ctx context.Context, marshale
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_DoubleColon_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_DoubleColon_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -844,7 +856,7 @@ func local_request_ABitOfEverythingService_DoubleColon_0(ctx context.Context, ma
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_DoubleColon_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_DoubleColon_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.DoubleColon(ctx, &protoReq)
@@ -936,7 +948,7 @@ func request_ABitOfEverythingService_UpdateV2_0(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_UpdateV2_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_UpdateV2_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -972,7 +984,7 @@ func local_request_ABitOfEverythingService_UpdateV2_0(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_UpdateV2_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_UpdateV2_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.UpdateV2(ctx, &protoReq)
@@ -1018,8 +1030,14 @@ func request_ABitOfEverythingService_UpdateV2_1(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_UpdateV2_1); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_UpdateV2_1)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -1065,8 +1083,14 @@ func local_request_ABitOfEverythingService_UpdateV2_1(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_UpdateV2_1); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_UpdateV2_1)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	msg, err := server.UpdateV2(ctx, &protoReq)
 	return msg, metadata, err
@@ -1156,7 +1180,7 @@ func request_ABitOfEverythingService_CreateNestedBodyOneof_0(ctx context.Context
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CreateNestedBodyOneof_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CreateNestedBodyOneof_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1191,7 +1215,7 @@ func local_request_ABitOfEverythingService_CreateNestedBodyOneof_0(ctx context.C
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CreateNestedBodyOneof_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CreateNestedBodyOneof_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.CreateNestedBodyOneof(ctx, &protoReq)
@@ -1256,7 +1280,7 @@ func request_ABitOfEverythingService_GetQuery_0(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_GetQuery_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_GetQuery_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1283,7 +1307,7 @@ func local_request_ABitOfEverythingService_GetQuery_0(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_GetQuery_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_GetQuery_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.GetQuery(ctx, &protoReq)
@@ -1669,7 +1693,7 @@ func request_ABitOfEverythingService_Echo_2(ctx context.Context, marshaler runti
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Echo_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Echo_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1687,7 +1711,7 @@ func local_request_ABitOfEverythingService_Echo_2(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Echo_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Echo_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.Echo(ctx, &protoReq)
@@ -1926,7 +1950,7 @@ func request_ABitOfEverythingService_CheckGetQueryParams_0(ctx context.Context, 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CheckGetQueryParams_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CheckGetQueryParams_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1953,7 +1977,7 @@ func local_request_ABitOfEverythingService_CheckGetQueryParams_0(ctx context.Con
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CheckGetQueryParams_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CheckGetQueryParams_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.CheckGetQueryParams(ctx, &protoReq)
@@ -1979,7 +2003,7 @@ func request_ABitOfEverythingService_CheckNestedEnumGetQueryParams_0(ctx context
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CheckNestedEnumGetQueryParams_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CheckNestedEnumGetQueryParams_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -2006,7 +2030,7 @@ func local_request_ABitOfEverythingService_CheckNestedEnumGetQueryParams_0(ctx c
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CheckNestedEnumGetQueryParams_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CheckNestedEnumGetQueryParams_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.CheckNestedEnumGetQueryParams(ctx, &protoReq)
@@ -2041,7 +2065,7 @@ func request_ABitOfEverythingService_CheckPostQueryParams_0(ctx context.Context,
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CheckPostQueryParams_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CheckPostQueryParams_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -2077,7 +2101,7 @@ func local_request_ABitOfEverythingService_CheckPostQueryParams_0(ctx context.Co
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CheckPostQueryParams_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CheckPostQueryParams_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.CheckPostQueryParams(ctx, &protoReq)
@@ -2270,7 +2294,7 @@ func request_ABitOfEverythingService_Exists_0(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Exists_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Exists_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -2297,7 +2321,7 @@ func local_request_ABitOfEverythingService_Exists_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_Exists_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_Exists_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.Exists(ctx, &protoReq)
@@ -2323,7 +2347,7 @@ func request_ABitOfEverythingService_CustomOptionsRequest_0(ctx context.Context,
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CustomOptionsRequest_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CustomOptionsRequest_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -2350,7 +2374,7 @@ func local_request_ABitOfEverythingService_CustomOptionsRequest_0(ctx context.Co
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_CustomOptionsRequest_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_CustomOptionsRequest_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.CustomOptionsRequest(ctx, &protoReq)
@@ -2376,7 +2400,7 @@ func request_ABitOfEverythingService_TraceRequest_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_TraceRequest_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_TraceRequest_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -2403,7 +2427,7 @@ func local_request_ABitOfEverythingService_TraceRequest_0(ctx context.Context, m
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ABitOfEverythingService_TraceRequest_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_ABitOfEverythingService_TraceRequest_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.TraceRequest(ctx, &protoReq)

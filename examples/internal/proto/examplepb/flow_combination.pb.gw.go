@@ -282,7 +282,7 @@ func request_FlowCombination_RpcBodyRpc_2(ctx context.Context, marshaler runtime
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -300,7 +300,7 @@ func local_request_FlowCombination_RpcBodyRpc_2(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcBodyRpc(ctx, &protoReq)
@@ -399,7 +399,7 @@ func request_FlowCombination_RpcBodyRpc_4(ctx context.Context, marshaler runtime
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_4); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_4); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -426,7 +426,7 @@ func local_request_FlowCombination_RpcBodyRpc_4(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_4); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_4); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcBodyRpc(ctx, &protoReq)
@@ -461,7 +461,7 @@ func request_FlowCombination_RpcBodyRpc_5(ctx context.Context, marshaler runtime
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_5); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_5); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -497,7 +497,7 @@ func local_request_FlowCombination_RpcBodyRpc_5(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_5); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_5); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcBodyRpc(ctx, &protoReq)
@@ -523,7 +523,7 @@ func request_FlowCombination_RpcBodyRpc_6(ctx context.Context, marshaler runtime
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_6); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_6); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -550,7 +550,7 @@ func local_request_FlowCombination_RpcBodyRpc_6(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyRpc_6); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyRpc_6); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcBodyRpc(ctx, &protoReq)
@@ -576,7 +576,7 @@ func request_FlowCombination_RpcPathSingleNestedRpc_0(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathSingleNestedRpc_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathSingleNestedRpc_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -603,7 +603,7 @@ func local_request_FlowCombination_RpcPathSingleNestedRpc_0(ctx context.Context,
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathSingleNestedRpc_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathSingleNestedRpc_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcPathSingleNestedRpc(ctx, &protoReq)
@@ -646,7 +646,7 @@ func request_FlowCombination_RpcPathNestedRpc_0(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedRpc_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedRpc_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -690,7 +690,7 @@ func local_request_FlowCombination_RpcPathNestedRpc_0(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedRpc_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedRpc_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcPathNestedRpc(ctx, &protoReq)
@@ -716,7 +716,7 @@ func request_FlowCombination_RpcPathNestedRpc_1(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedRpc_1); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedRpc_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -743,7 +743,7 @@ func local_request_FlowCombination_RpcPathNestedRpc_1(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedRpc_1); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedRpc_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcPathNestedRpc(ctx, &protoReq)
@@ -778,7 +778,7 @@ func request_FlowCombination_RpcPathNestedRpc_2(ctx context.Context, marshaler r
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedRpc_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedRpc_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -814,7 +814,7 @@ func local_request_FlowCombination_RpcPathNestedRpc_2(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedRpc_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedRpc_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RpcPathNestedRpc(ctx, &protoReq)
@@ -905,7 +905,7 @@ func request_FlowCombination_RpcBodyStream_2(ctx context.Context, marshaler runt
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyStream_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyStream_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -988,7 +988,7 @@ func request_FlowCombination_RpcBodyStream_4(ctx context.Context, marshaler runt
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyStream_4); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyStream_4); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1034,7 +1034,7 @@ func request_FlowCombination_RpcBodyStream_5(ctx context.Context, marshaler runt
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyStream_5); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyStream_5); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1071,7 +1071,7 @@ func request_FlowCombination_RpcBodyStream_6(ctx context.Context, marshaler runt
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcBodyStream_6); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcBodyStream_6); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1108,7 +1108,7 @@ func request_FlowCombination_RpcPathSingleNestedStream_0(ctx context.Context, ma
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathSingleNestedStream_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathSingleNestedStream_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1162,7 +1162,7 @@ func request_FlowCombination_RpcPathNestedStream_0(ctx context.Context, marshale
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedStream_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedStream_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1199,7 +1199,7 @@ func request_FlowCombination_RpcPathNestedStream_1(ctx context.Context, marshale
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedStream_1); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedStream_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -1245,7 +1245,7 @@ func request_FlowCombination_RpcPathNestedStream_2(ctx context.Context, marshale
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_FlowCombination_RpcPathNestedStream_2); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_FlowCombination_RpcPathNestedStream_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {

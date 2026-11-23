@@ -90,7 +90,7 @@ func request_StreamService_List_0(ctx context.Context, marshaler runtime.Marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_StreamService_List_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_StreamService_List_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -204,7 +204,7 @@ func request_StreamService_Download_0(ctx context.Context, marshaler runtime.Mar
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_StreamService_Download_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_StreamService_Download_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {

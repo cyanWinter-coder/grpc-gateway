@@ -22,6 +22,69 @@ func getFieldByName(fields protoreflect.FieldDescriptors, name string) protorefl
 	return fields.ByJSONName(name)
 }
 
+// MergeFieldMaskPaths adds paths to the FieldMask so that it covers every
+// field the request bound. The body's mask (FieldMaskFromRequestBody) lists
+// the fields sent in the body; query parameters and path parameters bind the
+// same request message through other channels, and without their paths the
+// backend would treat those fields as unset and silently drop them.
+//
+// Paths already covered by the mask, including by a parent path, are not added
+// again: a field mask naming "a" already covers "a.b", and field masks must not
+// contain redundant paths. A path that is a parent of an existing path replaces
+// the more specific ones. The result is sorted and deduplicated, matching the
+// deterministic shape FieldMaskFromRequestBody produces.
+func MergeFieldMaskPaths(mask *field_mask.FieldMask, paths ...string) *field_mask.FieldMask {
+	if mask == nil {
+		mask = &field_mask.FieldMask{}
+	}
+
+	kept := make(map[string]struct{}, len(mask.Paths)+len(paths))
+	for _, existing := range mask.Paths {
+		kept[existing] = struct{}{}
+	}
+	for _, path := range paths {
+		if path == "" {
+			continue
+		}
+		// Drop anything the new path already covers, and skip the new path if an
+		// existing parent path covers it.
+		redundant := false
+		for existing := range kept {
+			switch {
+			case existing == path:
+				redundant = true
+			case hasPathPrefix(existing, path):
+				// existing is a parent of path: it already covers path.
+				redundant = true
+			case hasPathPrefix(path, existing):
+				// path is a parent of existing: existing is now redundant.
+				delete(kept, existing)
+			}
+		}
+		if !redundant {
+			kept[path] = struct{}{}
+		}
+	}
+
+	merged := make([]string, 0, len(kept))
+	for path := range kept {
+		merged = append(merged, path)
+	}
+	sort.Strings(merged)
+	mask.Paths = merged
+	return mask
+}
+
+// hasPathPrefix reports whether path starts with parent as a field-path
+// segment, so "a.b" is a prefix of "a.b.c" but "a.b" is not a prefix of
+// "a.badger".
+func hasPathPrefix(parent, path string) bool {
+	if parent == "" || len(path) <= len(parent) {
+		return false
+	}
+	return strings.HasPrefix(path, parent) && path[len(parent)] == '.'
+}
+
 // FieldMaskFromRequestBody creates a FieldMask printing all complete paths from the JSON body.
 func FieldMaskFromRequestBody(r io.Reader, msg proto.Message) (*field_mask.FieldMask, error) {
 	fm := &field_mask.FieldMask{}

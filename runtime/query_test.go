@@ -510,7 +510,7 @@ func TestPopulateParameters(t *testing.T) {
 			},
 			filter:  utilities.NewDoubleArray(nil),
 			want:    &examplepb.Proto3Message{},
-			wanterr: errors.New("too many values for field \"uint64_value\": 1, 2"),
+			wanterr: errors.New(`too many values for field "uint64_value"`),
 		},
 		{
 			// Error when dereferencing a list of messages
@@ -957,10 +957,12 @@ func TestPopulateQueryParametersWithInvalidNestedParameters(t *testing.T) {
 }
 
 func TestPopulateQueryParametersWithDuplicateFieldNames(t *testing.T) {
-	// A field is addressable by both its proto name and its JSON name, so a
-	// request that spells one field both ways sets it twice. protojson refuses
-	// that in a body ("duplicate field"), and here the value that survived
-	// depended on map iteration order, so the query parser refuses it too.
+	// A scalar field is addressable by both its proto name and its JSON name,
+	// so a request that spells one field both ways sets it twice. protojson
+	// refuses that in a body ("duplicate field"), and here the value that
+	// survived depended on map iteration order, so the query parser refuses it
+	// too. Repeated fields instead accumulate one element per parameter, in the
+	// order the parameters were sent.
 	for _, spec := range []struct {
 		values  url.Values
 		wantErr string
@@ -970,16 +972,8 @@ func TestPopulateQueryParametersWithDuplicateFieldNames(t *testing.T) {
 			wantErr: `duplicate field "string_value"`,
 		},
 		{
-			values:  url.Values{"repeated_value": {"a"}, "repeatedValue": {"b"}},
-			wantErr: `duplicate field "repeated_value"`,
-		},
-		{
 			values:  url.Values{"nested.string_value": {"a"}, "nested.stringValue": {"b"}},
 			wantErr: `duplicate field "nested.string_value"`,
-		},
-		{
-			values:  url.Values{"map_value[key]": {"a"}, "mapValue[key]": {"b"}},
-			wantErr: `duplicate field "map_value[key]"`,
 		},
 	} {
 		msg := &examplepb.Proto3Message{}
@@ -989,13 +983,24 @@ func TestPopulateQueryParametersWithDuplicateFieldNames(t *testing.T) {
 		}
 	}
 
-	// Separate keys of one map, keys naming different fields, and a field the
-	// filter drops under either name are not duplicates.
+	// Repeated fields under either spelling accumulate rather than erroring:
+	// the two names resolve to one field, and repeated fields are defined by
+	// accumulation. Map keys spelled twice are refused as duplicate map entries.
 	for _, spec := range []struct {
 		values url.Values
 		filter *utilities.DoubleArray
 		want   proto.Message
 	}{
+		{
+			// url.Values loses wire order; its deterministic key order puts the
+			// JSON spelling first. The wire-order semantics are covered by
+			// TestPopulateQueryParametersFromRequest.
+			values: url.Values{"repeated_value": {"a"}, "repeatedValue": {"b"}},
+			filter: utilities.NewDoubleArray(nil),
+			want: &examplepb.Proto3Message{
+				RepeatedValue: []string{"b", "a"},
+			},
+		},
 		{
 			values: url.Values{"map_value[one]": {"a"}, "mapValue[two]": {"b"}},
 			filter: utilities.NewDoubleArray(nil),
@@ -1024,6 +1029,13 @@ func TestPopulateQueryParametersWithDuplicateFieldNames(t *testing.T) {
 		if diff := cmp.Diff(spec.want, msg, protocmp.Transform()); diff != "" {
 			t.Errorf("runtime.PopulateQueryParameters(msg, %v, %v): %s", spec.values, spec.filter, diff)
 		}
+	}
+
+	msg := &examplepb.Proto3Message{}
+	err := runtime.PopulateQueryParameters(msg, url.Values{"map_value[key]": {"a"}, "mapValue[key]": {"b"}}, utilities.NewDoubleArray(nil))
+	wantErr := `duplicate key "key" in map "grpc.gateway.runtime.internal.examplepb.Proto3Message.map_value"`
+	if err == nil || err.Error() != wantErr {
+		t.Errorf("runtime.PopulateQueryParameters(msg, duplicate map key, nil) = %v; want %v", err, wantErr)
 	}
 }
 

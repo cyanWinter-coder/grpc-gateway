@@ -382,6 +382,7 @@ func request_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }}(ct
 	_ = template.Must(handlerTemplate.New("client-rpc-request-func").Funcs(funcMap).Parse(`
 {{ $AllowPatchFeature := .AllowPatchFeature }}
 {{ $UseOpaqueAPI := .UseOpaqueAPI }}
+{{ $isFieldMask := and $AllowPatchFeature (eq (.HTTPMethod) "PATCH") (.FieldMaskField) .Body (not (eq "*" .GetBodyFieldPath)) }}
 {{ if .HasQueryParam }}
 var filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }} = {{ .QueryParamFilter }}
 {{ end }}
@@ -400,7 +401,6 @@ var filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }} = {{
 {{- end }}
 	)
 {{- if .Body }}
-	{{- $isFieldMask := and $AllowPatchFeature (eq (.HTTPMethod) "PATCH") (.FieldMaskField) (not (eq "*" .GetBodyFieldPath)) }}
 	{{- if $isFieldMask }}
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
@@ -521,9 +521,31 @@ var filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }} = {{
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }}); err != nil {
+	{{- if and $AllowPatchFeature (eq (.HTTPMethod) "PATCH") (.FieldMaskField) }}
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }})
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	{{- if $isFieldMask }}
+	{{- if $UseOpaqueAPI }}
+	if !protoReq.Has{{ .FieldMaskField }}() || len(protoReq.Get{{ .FieldMaskField }}().GetPaths()) == 0 {
+		protoReq.Set{{ .FieldMaskField }}(runtime.MergeFieldMaskPaths(nil, queryFieldPaths...))
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.Get{{ .FieldMaskField }}(), queryFieldPaths...)
+	}
+	{{- else }}
+	if protoReq.{{ .FieldMaskField }} == nil || len(protoReq.{{ .FieldMaskField }}.GetPaths()) == 0 {
+		protoReq.{{ .FieldMaskField }} = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.{{ .FieldMaskField }}, queryFieldPaths...)
+	}
+	{{- end }}
+	{{- end }}
+	{{- else }}
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }}); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	{{- end }}
 {{- end }}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -608,6 +630,7 @@ func local_request_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index
 	_ = template.Must(localHandlerTemplate.New("local-client-rpc-request-func").Funcs(funcMap).Parse(`
 {{ $AllowPatchFeature := .AllowPatchFeature }}
 {{ $UseOpaqueAPI := .UseOpaqueAPI }}
+{{ $isFieldMask := and $AllowPatchFeature (eq (.HTTPMethod) "PATCH") (.FieldMaskField) .Body (not (eq "*" .GetBodyFieldPath)) }}
 {{ template "local-request-func-signature" . }} {
 	var (
 		protoReq {{.Method.RequestType.GoType .Method.Service.File.GoPkg.Path}}
@@ -623,7 +646,6 @@ func local_request_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index
 {{- end }}
 	)
 {{- if .Body }}
-	{{- $isFieldMask := and $AllowPatchFeature (eq (.HTTPMethod) "PATCH") (.FieldMaskField) (not (eq "*" .GetBodyFieldPath)) }}
 	{{- if $isFieldMask }}
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
@@ -744,9 +766,31 @@ func local_request_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }}); err != nil {
+	{{- if and $AllowPatchFeature (eq (.HTTPMethod) "PATCH") (.FieldMaskField) }}
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }})
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	{{- if $isFieldMask }}
+	{{- if $UseOpaqueAPI }}
+	if !protoReq.Has{{ .FieldMaskField }}() || len(protoReq.Get{{ .FieldMaskField }}().GetPaths()) == 0 {
+		protoReq.Set{{ .FieldMaskField }}(runtime.MergeFieldMaskPaths(nil, queryFieldPaths...))
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.Get{{ .FieldMaskField }}(), queryFieldPaths...)
+	}
+	{{- else }}
+	if protoReq.{{ .FieldMaskField }} == nil || len(protoReq.{{ .FieldMaskField }}.GetPaths()) == 0 {
+		protoReq.{{ .FieldMaskField }} = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.{{ .FieldMaskField }}, queryFieldPaths...)
+	}
+	{{- end }}
+	{{- end }}
+	{{- else }}
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_{{ .Method.Service.GetName }}_{{ .Method.GetName }}_{{ .Index }}); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	{{- end }}
 {{- end}}
 {{- if .Method.GetServerStreaming }}
 	// TODO

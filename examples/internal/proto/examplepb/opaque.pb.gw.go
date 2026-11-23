@@ -58,7 +58,7 @@ func request_OpaqueEcommerceService_OpaqueGetProduct_0(ctx context.Context, mars
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueGetProduct_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueGetProduct_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -86,7 +86,7 @@ func local_request_OpaqueEcommerceService_OpaqueGetProduct_0(ctx context.Context
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueGetProduct_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueGetProduct_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.OpaqueGetProduct(ctx, &protoReq)
@@ -103,7 +103,7 @@ func request_OpaqueEcommerceService_OpaqueSearchProducts_0(ctx context.Context, 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueSearchProducts_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueSearchProducts_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -185,7 +185,7 @@ func request_OpaqueEcommerceService_OpaqueCreateProductField_0(ctx context.Conte
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueCreateProductField_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueCreateProductField_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -214,7 +214,7 @@ func local_request_OpaqueEcommerceService_OpaqueCreateProductField_0(ctx context
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueCreateProductField_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueCreateProductField_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.OpaqueCreateProductField(ctx, &protoReq)
@@ -346,8 +346,14 @@ func request_OpaqueEcommerceService_OpaqueUpdateProduct_0(ctx context.Context, m
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueUpdateProduct_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueUpdateProduct_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if !protoReq.HasUpdateMask() || len(protoReq.GetUpdateMask().GetPaths()) == 0 {
+		protoReq.SetUpdateMask(runtime.MergeFieldMaskPaths(nil, queryFieldPaths...))
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.GetUpdateMask(), queryFieldPaths...)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -395,8 +401,14 @@ func local_request_OpaqueEcommerceService_OpaqueUpdateProduct_0(ctx context.Cont
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueUpdateProduct_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueUpdateProduct_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if !protoReq.HasUpdateMask() || len(protoReq.GetUpdateMask().GetPaths()) == 0 {
+		protoReq.SetUpdateMask(runtime.MergeFieldMaskPaths(nil, queryFieldPaths...))
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.GetUpdateMask(), queryFieldPaths...)
 	}
 	msg, err := server.OpaqueUpdateProduct(ctx, &protoReq)
 	return msg, metadata, err
@@ -429,7 +441,7 @@ func request_OpaqueEcommerceService_OpaqueSearchOrders_0(ctx context.Context, ma
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueSearchOrders_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueSearchOrders_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -464,7 +476,7 @@ func local_request_OpaqueEcommerceService_OpaqueSearchOrders_0(ctx context.Conte
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OpaqueEcommerceService_OpaqueSearchOrders_0); err != nil {
+	if _, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_OpaqueEcommerceService_OpaqueSearchOrders_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.OpaqueSearchOrders(ctx, &protoReq)

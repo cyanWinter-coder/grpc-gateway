@@ -67,8 +67,14 @@ func request_NonStandardService_Update_0(ctx context.Context, marshaler runtime.
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_NonStandardService_Update_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_NonStandardService_Update_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -105,8 +111,14 @@ func local_request_NonStandardService_Update_0(ctx context.Context, marshaler ru
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_NonStandardService_Update_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_NonStandardService_Update_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	msg, err := server.Update(ctx, &protoReq)
 	return msg, metadata, err
@@ -142,8 +154,14 @@ func request_NonStandardService_UpdateWithJSONNames_0(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_NonStandardService_UpdateWithJSONNames_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_NonStandardService_UpdateWithJSONNames_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -180,8 +198,14 @@ func local_request_NonStandardService_UpdateWithJSONNames_0(ctx context.Context,
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_NonStandardService_UpdateWithJSONNames_0); err != nil {
+	queryFieldPaths, err := runtime.PopulateQueryParametersFromRequest(&protoReq, req, filter_NonStandardService_UpdateWithJSONNames_0)
+	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
+		protoReq.UpdateMask = runtime.MergeFieldMaskPaths(nil, queryFieldPaths...)
+	} else {
+		runtime.MergeFieldMaskPaths(protoReq.UpdateMask, queryFieldPaths...)
 	}
 	msg, err := server.UpdateWithJSONNames(ctx, &protoReq)
 	return msg, metadata, err
