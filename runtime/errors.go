@@ -131,22 +131,30 @@ func DefaultHTTPErrorHandler(ctx context.Context, mux *ServeMux, marshaler Marsh
 	}
 
 	contentType := marshaler.ContentType(respRw)
-	w.Header().Set("Content-Type", contentType)
 
 	if s.Code() == codes.Unauthenticated {
 		// Canonical spelling, so Header.Set does not have to build one.
 		w.Header().Set("Www-Authenticate", s.Message())
 	}
 
-	buf, merr := marshaler.Marshal(respRw)
+	buf, usedMarshaler, merr := marshalerSnapshotForRequest(mux, r).marshalWithFallback(marshaler, respRw)
 	if merr != nil {
 		grpclog.Errorf("Failed to marshal error message %q: %v", s, merr)
+		// The response is a hand-written JSON fallback, so announce that
+		// instead of the content type of a marshaler that failed.
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		if _, err := io.WriteString(w, fallback); err != nil {
 			grpclog.Errorf("Failed to write response: %v", err)
 		}
 		return
 	}
+	if !sameMarshaler(usedMarshaler, marshaler) {
+		// The negotiated marshaler could not encode the status; a compatible
+		// fallback from the same registry snapshot did, so advertise its type.
+		contentType = usedMarshaler.ContentType(respRw)
+	}
+	w.Header().Set("Content-Type", contentType)
 
 	md, ok := ServerMetadataFromContext(ctx)
 	if ok {

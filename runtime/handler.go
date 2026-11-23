@@ -43,6 +43,11 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 		delimiter = []byte("\n")
 	}
 
+	// All chunks and the error chunk use the registry snapshot the request
+	// entered with, so a registration made mid-stream cannot change the
+	// encoding halfway through the response.
+	snapshot := marshalerSnapshotForRequest(mux, req)
+
 	var wroteHeader bool
 	for {
 		resp, err := recv()
@@ -65,21 +70,12 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 			return
 		}
 
-		if !wroteHeader {
-			var contentType string
-			if sct, ok := marshaler.(StreamContentType); ok {
-				contentType = sct.StreamContentType(respRw)
-			} else {
-				contentType = marshaler.ContentType(respRw)
-			}
-			w.Header().Set("Content-Type", contentType)
-		}
-
 		var buf []byte
+		usedMarshaler := marshaler
 		httpBody, isHTTPBody := respRw.(*httpbody.HttpBody)
 		switch {
 		case respRw == nil:
-			buf, err = marshaler.Marshal(errorChunk(status.New(codes.Internal, "empty response")))
+			buf, usedMarshaler, err = snapshot.marshalWithFallback(marshaler, errorChunk(status.New(codes.Internal, "empty response")))
 		case isHTTPBody:
 			buf = httpBody.GetData()
 		default:
@@ -88,13 +84,17 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 				result["result"] = rb.XXX_ResponseBody()
 			}
 
-			buf, err = marshaler.Marshal(result)
+			buf, usedMarshaler, err = snapshot.marshalWithFallback(marshaler, result)
 		}
 
 		if err != nil {
 			grpclog.Errorf("Failed to marshal response chunk: %v", err)
 			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
 			return
+		}
+
+		if !wroteHeader {
+			w.Header().Set("Content-Type", streamContentType(usedMarshaler, respRw))
 		}
 		if _, err := w.Write(buf); err != nil {
 			grpclog.Errorf("Failed to send response chunk: %v", err)
@@ -184,16 +184,23 @@ func ForwardResponseMessage(ctx context.Context, mux *ServeMux, marshaler Marsha
 		HTTPError(ctx, mux, marshaler, w, req, err)
 		return
 	}
+	snapshot := marshalerSnapshotForRequest(mux, req)
 	var buf []byte
+	var usedMarshaler Marshaler
 	if rb, ok := respRw.(responseBody); ok {
-		buf, err = marshaler.Marshal(rb.XXX_ResponseBody())
+		buf, usedMarshaler, err = snapshot.marshalWithFallback(marshaler, rb.XXX_ResponseBody())
 	} else {
-		buf, err = marshaler.Marshal(respRw)
+		buf, usedMarshaler, err = snapshot.marshalWithFallback(marshaler, respRw)
 	}
 	if err != nil {
 		grpclog.Errorf("Marshal error: %v", err)
 		HTTPError(ctx, mux, marshaler, w, req, err)
 		return
+	}
+	if !sameMarshaler(usedMarshaler, marshaler) {
+		// The preferred marshaler could not encode the message and a
+		// compatible fallback from the same snapshot did; advertise that one.
+		w.Header().Set("Content-Type", usedMarshaler.ContentType(respRw))
 	}
 
 	if !doForwardTrailers && mux.writeContentLength {
@@ -232,13 +239,17 @@ func handleForwardResponseOptions(ctx context.Context, w http.ResponseWriter, re
 func handleForwardResponseStreamError(ctx context.Context, wroteHeader bool, marshaler Marshaler, w http.ResponseWriter, req *http.Request, mux *ServeMux, err error, delimiter []byte) {
 	st := mux.streamErrorHandler(ctx, err)
 	msg := errorChunk(st)
+	buf, usedMarshaler, merr := marshalerSnapshotForRequest(mux, req).marshalWithFallback(marshaler, msg)
 	if !wroteHeader {
-		w.Header().Set("Content-Type", marshaler.ContentType(msg))
+		contentType := marshaler.ContentType(msg)
+		if !sameMarshaler(usedMarshaler, marshaler) {
+			contentType = usedMarshaler.ContentType(msg)
+		}
+		w.Header().Set("Content-Type", contentType)
 		w.WriteHeader(HTTPStatusFromCode(st.Code()))
 	}
-	buf, err := marshaler.Marshal(msg)
-	if err != nil {
-		grpclog.Errorf("Failed to marshal an error: %v", err)
+	if merr != nil {
+		grpclog.Errorf("Failed to marshal an error: %v", merr)
 		return
 	}
 	if _, err := w.Write(buf); err != nil {
@@ -249,6 +260,15 @@ func handleForwardResponseStreamError(ctx context.Context, wroteHeader bool, mar
 		grpclog.Errorf("Failed to send delimiter chunk: %v", err)
 		return
 	}
+}
+
+// streamContentType reports the Content-Type a marshaler uses for a chunk,
+// preferring the stream-specific type when the marshaler implements it.
+func streamContentType(marshaler Marshaler, v interface{}) string {
+	if sct, ok := marshaler.(StreamContentType); ok {
+		return sct.StreamContentType(v)
+	}
+	return marshaler.ContentType(v)
 }
 
 func errorChunk(st *status.Status) map[string]proto.Message {

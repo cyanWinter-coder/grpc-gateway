@@ -31,6 +31,50 @@ You might want to serialize request/response messages in MessagePack instead of 
 
 You can see [the default implementation for JSON](https://github.com/grpc-ecosystem/grpc-gateway/blob/main/runtime/marshal_jsonpb.go) for reference.
 
+### Registering media types while serving
+
+`WithMarshalerOption` is an option applied during `NewServeMux`. If the set of
+supported media types is only known at runtime, register and remove them on the
+live mux with `RegisterMarshaler` and `UnregisterMarshaler`:
+
+```go
+mux := runtime.NewServeMux()
+if err := mux.RegisterMarshaler("application/x-msgpack", m); err != nil {
+	// empty media type or nil marshaler
+}
+removed := mux.UnregisterMarshaler("application/x-msgpack")
+```
+
+Both are safe to call while the mux is serving, and neither disturbs a request
+that is already in flight. Each request captures one snapshot of the registry
+when it enters `ServeHTTP`; `Accept` negotiation, the inbound `Content-Type`
+lookup and any fallback used when the chosen marshaler cannot encode a response
+all read from that snapshot. A registration therefore applies from the next
+request onwards, and a registration made while a request is being handled does
+not change how that request is encoded. Removing a media type takes effect on
+the next request in the same way. Removing `MIMEWildcard` leaves the built-in
+JSON marshaler as the fallback for requests that match nothing.
+
+### Negotiation order
+
+For an inbound request the registry is consulted in this order: the exact
+`Content-Type` value, the parsed media type (so `application/json; charset=utf-8`
+matches `application/json`), `MIMEWildcard`, then the built-in JSON marshaler.
+
+For the outbound encoding, a whole `Accept` value that exactly matches a
+registered media type wins. Otherwise the media ranges are ordered by
+descending `q`, keeping header order for equal qualities, and the first
+registered exact media type is used. A `q=0` range is treated as unacceptable.
+Wildcard ranges (`*/*`, `application/*`) and a missing match fall back to the
+inbound marshaler, which keeps a client that accepts anything on the same
+encoding as its request.
+
+If the chosen marshaler fails to encode a response or an error, the gateway
+retries, within the same snapshot and in a fixed order: the `application/json`
+registration, the `MIMEWildcard` registration, and finally the package default.
+The `Content-Type` header then describes the marshaler that actually produced
+the body.
+
 ### Using proto names in JSON
 
 The protocol buffer compiler generates camelCase JSON tags that are used by default.

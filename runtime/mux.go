@@ -9,6 +9,8 @@ import (
 	"net/textproto"
 	"regexp"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/internal/httprule"
 	"google.golang.org/grpc"
@@ -61,11 +63,14 @@ type Middleware func(HandlerFunc) HandlerFunc
 // It matches http requests to patterns and invokes the corresponding handler.
 type ServeMux struct {
 	// handlers maps HTTP method to a list of handlers.
-	handlers                  map[string][]handler
-	middlewares               []Middleware
-	forwardResponseOptions    []func(context.Context, http.ResponseWriter, proto.Message) error
-	forwardResponseRewriter   ForwardResponseRewriter
-	marshalers                marshalerRegistry
+	handlers                map[string][]handler
+	middlewares             []Middleware
+	forwardResponseOptions  []func(context.Context, http.ResponseWriter, proto.Message) error
+	forwardResponseRewriter ForwardResponseRewriter
+	// marshalers holds the current immutable registry snapshot. Registrations
+	// replace it, so a request can keep the snapshot it started with.
+	marshalers                atomic.Pointer[marshalerSnapshot]
+	marshalersMu              sync.Mutex
 	incomingHeaderMatcher     HeaderMatcherFunc
 	outgoingHeaderMatcher     HeaderMatcherFunc
 	outgoingTrailerMatcher    HeaderMatcherFunc
@@ -403,12 +408,12 @@ func NewServeMux(opts ...ServeMuxOption) *ServeMux {
 		handlers:                make(map[string][]handler),
 		forwardResponseOptions:  make([]func(context.Context, http.ResponseWriter, proto.Message) error, 0),
 		forwardResponseRewriter: func(ctx context.Context, response proto.Message) (any, error) { return response, nil },
-		marshalers:              makeMarshalerMIMERegistry(),
 		errorHandler:            DefaultHTTPErrorHandler,
 		streamErrorHandler:      DefaultStreamErrorHandler,
 		routingErrorHandler:     DefaultRoutingErrorHandler,
 		unescapingMode:          UnescapingModeDefault,
 	}
+	serveMux.marshalers.Store(makeMarshalerMIMERegistry())
 
 	for _, opt := range opts {
 		opt(serveMux)
@@ -466,6 +471,13 @@ func (s *ServeMux) HandlePath(meth string, pathPattern string, h HandlerFunc) er
 
 // ServeHTTP dispatches the request to the first handler whose pattern matches to r.Method and r.URL.Path.
 func (s *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Pin the marshaler registry for the whole request. MarshalerForRequest reads
+	// it back off the request context, so encoding, error handling and fallbacks
+	// all agree even if a registration happens while this request is in flight.
+	// The assignment updates the request in place rather than via WithContext:
+	// ServeHTTP already mutates the request it is given (method override, form
+	// parsing), and callers may read that state after it returns.
+	*r = *r.WithContext(withMarshalerSnapshot(r.Context(), s.currentMarshalerSnapshot()))
 	ctx := r.Context()
 
 	path := r.URL.Path
