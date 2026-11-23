@@ -21,6 +21,7 @@ go_library(
         "pattern.go",
         "proto2_convert.go",
         "query.go",
+        "stream.go",
     ],
     importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/runtime",
     deps = [
@@ -69,6 +70,8 @@ go_test(
         "query_fuzz_test.go",
         "query_internal_test.go",
         "query_test.go",
+        "stream_internal_test.go",
+        "stream_test.go",
     ],
     embed = [":runtime"],
     deps = [

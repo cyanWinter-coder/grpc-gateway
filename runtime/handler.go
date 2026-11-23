@@ -4,119 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/textproto"
 	"strconv"
 	"strings"
 
-	"google.golang.org/genproto/googleapis/api/httpbody"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
-
-// ForwardResponseStream forwards the stream from gRPC server to REST client.
-func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshaler, w http.ResponseWriter, req *http.Request, recv func() (proto.Message, error), opts ...func(context.Context, http.ResponseWriter, proto.Message) error) {
-	rc := http.NewResponseController(w)
-	md, ok := ServerMetadataFromContext(ctx)
-	if !ok {
-		grpclog.Error("Failed to extract ServerMetadata from context")
-		http.Error(w, "unexpected error", http.StatusInternalServerError)
-		return
-	}
-	handleForwardResponseServerMetadata(w, mux, md)
-
-	if !mux.disableChunkedEncoding {
-		w.Header().Set("Transfer-Encoding", "chunked")
-	}
-	if err := handleForwardResponseOptions(ctx, w, nil, opts); err != nil {
-		HTTPError(ctx, mux, marshaler, w, req, err)
-		return
-	}
-
-	var delimiter []byte
-	if d, ok := marshaler.(Delimited); ok {
-		delimiter = d.Delimiter()
-	} else {
-		delimiter = []byte("\n")
-	}
-
-	var wroteHeader bool
-	for {
-		resp, err := recv()
-		if errors.Is(err, io.EOF) {
-			return
-		}
-		if err != nil {
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
-			return
-		}
-		if err := handleForwardResponseOptions(ctx, w, resp, opts); err != nil {
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
-			return
-		}
-
-		respRw, err := mux.forwardResponseRewriter(ctx, resp)
-		if err != nil {
-			grpclog.Errorf("Rewrite error: %v", err)
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
-			return
-		}
-
-		if !wroteHeader {
-			var contentType string
-			if sct, ok := marshaler.(StreamContentType); ok {
-				contentType = sct.StreamContentType(respRw)
-			} else {
-				contentType = marshaler.ContentType(respRw)
-			}
-			w.Header().Set("Content-Type", contentType)
-		}
-
-		var buf []byte
-		httpBody, isHTTPBody := respRw.(*httpbody.HttpBody)
-		switch {
-		case respRw == nil:
-			buf, err = marshaler.Marshal(errorChunk(status.New(codes.Internal, "empty response")))
-		case isHTTPBody:
-			buf = httpBody.GetData()
-		default:
-			result := map[string]interface{}{"result": respRw}
-			if rb, ok := respRw.(responseBody); ok {
-				result["result"] = rb.XXX_ResponseBody()
-			}
-
-			buf, err = marshaler.Marshal(result)
-		}
-
-		if err != nil {
-			grpclog.Errorf("Failed to marshal response chunk: %v", err)
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
-			return
-		}
-		if _, err := w.Write(buf); err != nil {
-			grpclog.Errorf("Failed to send response chunk: %v", err)
-			return
-		}
-		wroteHeader = true
-		if _, err := w.Write(delimiter); err != nil {
-			grpclog.Errorf("Failed to send delimiter chunk: %v", err)
-			return
-		}
-		err = rc.Flush()
-		if err != nil {
-			if errors.Is(err, http.ErrNotSupported) {
-				grpclog.Errorf("Flush not supported in %T", w)
-				http.Error(w, "unexpected type of web server", http.StatusInternalServerError)
-				return
-			}
-			grpclog.Errorf("Failed to flush response to client: %v", err)
-			return
-		}
-	}
-}
 
 func handleForwardResponseServerMetadata(w http.ResponseWriter, mux *ServeMux, md ServerMetadata) {
 	for k, vs := range md.HeaderMD {
