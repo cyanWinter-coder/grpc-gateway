@@ -43,29 +43,39 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 		delimiter = []byte("\n")
 	}
 
-	var wroteHeader bool
+	var responseStarted bool
+	var trailersAnnounced bool
 	for {
 		resp, err := recv()
 		if errors.Is(err, io.EOF) {
+			if !responseStarted {
+				trailersAnnounced = announceStreamStatusTrailers(w, req, mux)
+			}
+			// Only populate the predeclared success trailer. For clients that
+			// did not negotiate trailers, do not add a new success-only
+			// TrailerPrefix entry; error terminals are still written below.
+			if trailersAnnounced {
+				writeStreamStatusTrailers(w, true, status.New(codes.OK, ""))
+			}
 			return
 		}
 		if err != nil {
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
+			handleForwardResponseStreamError(ctx, responseStarted, marshaler, w, req, mux, err, delimiter)
 			return
 		}
 		if err := handleForwardResponseOptions(ctx, w, resp, opts); err != nil {
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
+			handleForwardResponseStreamError(ctx, responseStarted, marshaler, w, req, mux, err, delimiter)
 			return
 		}
 
 		respRw, err := mux.forwardResponseRewriter(ctx, resp)
 		if err != nil {
 			grpclog.Errorf("Rewrite error: %v", err)
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
+			handleForwardResponseStreamError(ctx, responseStarted, marshaler, w, req, mux, err, delimiter)
 			return
 		}
 
-		if !wroteHeader {
+		if !responseStarted {
 			var contentType string
 			if sct, ok := marshaler.(StreamContentType); ok {
 				contentType = sct.StreamContentType(respRw)
@@ -93,26 +103,36 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 
 		if err != nil {
 			grpclog.Errorf("Failed to marshal response chunk: %v", err)
-			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err, delimiter)
+			handleForwardResponseStreamError(ctx, responseStarted, marshaler, w, req, mux, err, delimiter)
 			return
+		}
+
+		// Fix headers before the first body byte. The first Write commits the
+		// implicit 200 status (or a status already chosen by a response
+		// option); do not call WriteHeader(200) here because that would
+		// overwrite/superfluously log the option's explicit status.
+		if !responseStarted {
+			trailersAnnounced = announceStreamStatusTrailers(w, req, mux)
+			responseStarted = true
 		}
 		if _, err := w.Write(buf); err != nil {
 			grpclog.Errorf("Failed to send response chunk: %v", err)
+			writeStreamTransportErrorTrailer(ctx, w, req, mux, err)
 			return
 		}
-		wroteHeader = true
 		if _, err := w.Write(delimiter); err != nil {
 			grpclog.Errorf("Failed to send delimiter chunk: %v", err)
+			writeStreamTransportErrorTrailer(ctx, w, req, mux, err)
 			return
 		}
 		err = rc.Flush()
 		if err != nil {
 			if errors.Is(err, http.ErrNotSupported) {
 				grpclog.Errorf("Flush not supported in %T", w)
-				http.Error(w, "unexpected type of web server", http.StatusInternalServerError)
-				return
+			} else {
+				grpclog.Errorf("Failed to flush response to client: %v", err)
 			}
-			grpclog.Errorf("Failed to flush response to client: %v", err)
+			writeStreamTransportErrorTrailer(ctx, w, req, mux, err)
 			return
 		}
 	}
@@ -229,26 +249,38 @@ func handleForwardResponseOptions(ctx context.Context, w http.ResponseWriter, re
 	return nil
 }
 
-func handleForwardResponseStreamError(ctx context.Context, wroteHeader bool, marshaler Marshaler, w http.ResponseWriter, req *http.Request, mux *ServeMux, err error, delimiter []byte) {
-	st := mux.streamErrorHandler(ctx, err)
+func handleForwardResponseStreamError(ctx context.Context, responseStarted bool, marshaler Marshaler, w http.ResponseWriter, req *http.Request, mux *ServeMux, err error, delimiter []byte) {
+	streamStatus := mux.streamErrorHandler(ctx, err)
+	st, httpStatus := resolveStreamTerminal(ctx, req, err, streamStatus)
 	msg := errorChunk(st)
-	if !wroteHeader {
+	trailersAnnounced := streamTrailersAnnouncementEnabled(req, mux)
+	if !responseStarted {
 		w.Header().Set("Content-Type", marshaler.ContentType(msg))
-		w.WriteHeader(HTTPStatusFromCode(st.Code()))
+		trailersAnnounced = announceStreamStatusTrailers(w, req, mux)
+		if !trailersAnnounced {
+			// Setting TrailerPrefix entries before WriteHeader makes net/http
+			// choose chunked framing even when the response body is small.
+			writeStreamStatusTrailers(w, false, st)
+		}
+		w.WriteHeader(httpStatus)
 	}
-	buf, err := marshaler.Marshal(msg)
-	if err != nil {
-		grpclog.Errorf("Failed to marshal an error: %v", err)
+	buf, merr := marshaler.Marshal(msg)
+	if merr != nil {
+		grpclog.Errorf("Failed to marshal an error: %v", merr)
+		writeStreamStatusTrailers(w, trailersAnnounced, st)
 		return
 	}
-	if _, err := w.Write(buf); err != nil {
-		grpclog.Errorf("Failed to notify error to client: %v", err)
+	if _, werr := w.Write(buf); werr != nil {
+		grpclog.Errorf("Failed to notify error to client: %v", werr)
+		writeStreamStatusTrailers(w, trailersAnnounced, st)
 		return
 	}
-	if _, err := w.Write(delimiter); err != nil {
-		grpclog.Errorf("Failed to send delimiter chunk: %v", err)
+	if _, werr := w.Write(delimiter); werr != nil {
+		grpclog.Errorf("Failed to send delimiter chunk: %v", werr)
+		writeStreamStatusTrailers(w, trailersAnnounced, st)
 		return
 	}
+	writeStreamStatusTrailers(w, trailersAnnounced, st)
 }
 
 func errorChunk(st *status.Status) map[string]proto.Message {

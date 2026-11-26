@@ -297,6 +297,9 @@ func WithErrorHandler(fn ErrorHandlerFunc) ServeMuxOption {
 // ErrorHandler will be invoked. However, once data has been written, the errors must
 // be handled differently: they must be included in the response body. The response body's
 // final message will include the error details returned by the stream error handler.
+// The terminal gRPC status is also emitted as Grpc-Status, Grpc-Message and
+// Grpc-Status-Details-Bin HTTP trailers, with oversized values truncated so
+// trailer framing remains intact.
 func WithStreamErrorHandler(fn StreamErrorHandlerFunc) ServeMuxOption {
 	return func(serveMux *ServeMux) {
 		serveMux.streamErrorHandler = fn

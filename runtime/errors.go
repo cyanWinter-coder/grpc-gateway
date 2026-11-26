@@ -82,18 +82,36 @@ func HTTPError(ctx context.Context, mux *ServeMux, marshaler Marshaler, w http.R
 }
 
 // HTTPStreamError uses the mux-configured stream error handler to notify error to the client without closing the connection.
+//
+// It preserves the historical HTTP 200 response and JSON error chunk. The
+// terminal gRPC status is additionally written as trailers. Trailer values are
+// percent-encoded/base64 and bounded, while the response body is left
+// unchanged for compatibility.
 func HTTPStreamError(ctx context.Context, mux *ServeMux, marshaler Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	st := mux.streamErrorHandler(ctx, err)
+	streamStatus := mux.streamErrorHandler(ctx, err)
+	st, _ := resolveStreamTerminal(ctx, r, err, streamStatus)
 	msg := errorChunk(st)
-	buf, err := marshaler.Marshal(msg)
-	if err != nil {
-		grpclog.Errorf("Failed to marshal an error: %v", err)
+
+	announced := announceStreamStatusTrailers(w, r, mux)
+	if announced {
+		w.Header().Set("Transfer-Encoding", "chunked")
+	} else {
+		// Prefix entries must be present before the first Write so net/http
+		// selects chunked framing and actually emits them as trailers.
+		writeStreamStatusTrailers(w, false, st)
+	}
+	buf, merr := marshaler.Marshal(msg)
+	if merr != nil {
+		grpclog.Errorf("Failed to marshal an error: %v", merr)
+		writeStreamStatusTrailers(w, announced, st)
 		return
 	}
-	if _, err := w.Write(buf); err != nil {
-		grpclog.Errorf("Failed to notify error to client: %v", err)
+	if _, werr := w.Write(buf); werr != nil {
+		grpclog.Errorf("Failed to notify error to client: %v", werr)
+		writeStreamStatusTrailers(w, announced, st)
 		return
 	}
+	writeStreamStatusTrailers(w, announced, st)
 }
 
 // DefaultHTTPErrorHandler is the default error handler.
